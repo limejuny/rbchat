@@ -7,22 +7,27 @@ class Client
     @server = server
     @request = nil
     @response = nil
+    login
     listen
-    signin
     send
     @request.join
     @response.join
   end
 
-  def signin
-    print "Enter the username: "
-    id = $stdin.gets.chomp
-    print "Enter the password: "
-    pwd = STDIN.noecho(&:gets).chomp
-    @server.puts({
-      id: id,
-      pwd: pwd,
-    }.to_json)
+  def login
+    loop do
+      print "Enter the username: "
+      id = gets.chomp
+      print "Enter the password: "
+      pwd = $stdin.noecho(&:gets).chomp
+      @server.puts({
+        id: id,
+        pwd: pwd,
+      }.to_json)
+      response = JSON.parse(@server.gets, symbolize_names: true)
+      puts; puts response[:message]
+      break if response[:ok]
+    end
     # id check
   end
 
