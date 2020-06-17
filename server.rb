@@ -3,9 +3,6 @@ require 'socket'
 require 'json'
 require 'redis'
 
-# bit_login
-# bit_index
-
 class Server
   def initialize (ip, port)
     @server = TCPServer.open(ip, port)
@@ -17,10 +14,10 @@ class Server
   def run
     loop {
       Thread.start(@server.accept) do |client|
+        (id, idx) = idcheck client
         puts "#{id} #{client}"
         @clients[id] = client
-        client.puts "Connection established, Thank you for joining! Happy chatting"
-        listen_user_messages(id, client)
+        listen_user_messages(id, client, idx)
       end
     }.join
   end
@@ -40,7 +37,7 @@ class Server
         @redis.setbit(:bit_index, index, 1)
         @redis.setbit(:bit_login, index, 1)
         client.puts({message: "로그인 성공.", ok: true}.to_json)
-        return id.to_sym
+        return [id.to_sym, index]
       end
 
       unless @redis.hget(id, :pwd) == pwd
@@ -54,19 +51,25 @@ class Server
         next
       end
 
-      # 로그인 가능
       @redis.setbit(:bit_login, index, 1)
       client.puts({message: "로그인 성공.", ok: true}.to_json)
-      return id.to_sym
+      return [id.to_sym, index]
     end
   end
 
-  def listen_user_messages (username, client)
+  def listen_user_messages (id, client, idx)
     loop {
-      msg = client.gets.chomp
-      @clients.each do |other_name, other_client|
-        unless other_name == username
-          other_client.puts "#{username.to_s}: #{msg}"
+      msg = client.gets
+      if msg.nil?
+        client.close
+        @redis.setbit(:bit_login, idx, 0)
+        @clients.delete(id)
+      else
+        msg = msg.chomp
+        @clients.each do |other_name, other_client|
+          unless other_name == id
+            other_client.puts "#{id.to_s}: #{msg}"
+          end
         end
       end
     }
