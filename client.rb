@@ -1,6 +1,8 @@
 require 'io/console'
 require 'socket'
 require 'json'
+require 'tty-cursor'
+require 'tty-screen'
 
 class Client
   def initialize (server)
@@ -28,7 +30,6 @@ class Client
       puts; puts response[:message]
       break if response[:ok]
     end
-    # id check
   end
 
   def listen
