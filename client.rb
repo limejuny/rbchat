@@ -34,7 +34,10 @@ class Client
       response = JSON.parse(@server.gets, symbolize_names: true)
       # puts; puts response[:message]
       print @cursor.move_to(0, 0)
+      print @cursor.clear_screen
       puts response[:message]
+      print @cursor.move_to(0, @height)
+      print ">> "
       break if response[:ok]
     end
   end
@@ -43,10 +46,12 @@ class Client
     @response = Thread.new do
       loop {
         msg = @server.gets.chomp
+        print @cursor.save
         print @cursor.move_to(0, @len)
         @len += 1
         puts "#{msg}"
-        print @cursor.move_to(0, @height)
+        # print @cursor.move_to(0, @height)
+        print @cursor.restore
       }
     end
   end
@@ -56,6 +61,14 @@ class Client
       loop {
         msg = $stdin.gets.chomp
         @server.puts( msg )
+        print @cursor.scroll_up
+        print @cursor.save
+        print @cursor.move_to(0, @len)
+        @len += 1
+        puts "-: #{msg}"
+        print @cursor.restore
+        print @cursor.clear_line
+        print ">> "
       }
     end
   end
