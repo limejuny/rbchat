@@ -8,18 +8,30 @@ class TTYChat
   def initialize
     @cursor = TTY::Cursor
     (@height, @width) = TTY::Screen.size
+    @buffer = []
     @len = 0
-    # @cursor.move_to(0, 0)
     print @cursor.clear_screen
-    print @cursor.move_to(0, @height)
+    print @cursor.move_to(0, @height - 1)
     print ">> "
   end
 
   def puts (message)
     print @cursor.save
-    print @cursor.move_to(0, @len)
-    @len += 1
-    STDOUT.puts message
+    if @len == @height - 2
+      @buffer.shift
+      @buffer.push message
+      print @cursor.move_to(0, 0)
+      @buffer.each do |msg|
+        print @cursor.clear_line
+        print msg
+        print @cursor.down
+      end
+    else
+      print @cursor.move_to(0, @len)
+      @len += 1
+      @buffer.push message
+      STDOUT.puts message
+    end
     print @cursor.restore
   end
 
