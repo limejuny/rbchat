@@ -4,16 +4,40 @@ require 'json'
 require 'tty-cursor'
 require 'tty-screen'
 
+class TTYChat
+  def initialize
+    @cursor = TTY::Cursor
+    (@height, @width) = TTY::Screen.size
+    @len = 0
+    # @cursor.move_to(0, 0)
+    print @cursor.clear_screen
+    print @cursor.move_to(0, @height)
+    print ">> "
+  end
+
+  def puts (message)
+    print @cursor.save
+    print @cursor.move_to(0, @len)
+    @len += 1
+    STDOUT.puts message
+    print @cursor.restore
+  end
+
+  def scroll_up
+    print @cursor.scroll_up
+  end
+
+  def clear_line
+    print @cursor.clear_line
+  end
+end
+
 class Client
   def initialize (server)
     @server = server
     @request = nil
     @response = nil
-    @cursor = TTY::Cursor
-    @size = TTY::Screen.size # => [height, width]
-    @height = @size[0]
-    @width = @size[1]
-    @len = 1
+    @tty = nil
     login
     listen
     send
@@ -32,13 +56,13 @@ class Client
         pwd: pwd,
       }.to_json)
       response = JSON.parse(@server.gets, symbolize_names: true)
-      # puts; puts response[:message]
-      print @cursor.move_to(0, 0)
-      print @cursor.clear_screen
-      puts response[:message]
-      print @cursor.move_to(0, @height)
-      print ">> "
-      break if response[:ok]
+      if response[:ok]
+        @tty = TTYChat.new
+        @tty.puts response[:message]
+        break
+      else
+        puts response[:message]
+      end
     end
   end
 
@@ -46,12 +70,7 @@ class Client
     @response = Thread.new do
       loop {
         msg = @server.gets.chomp
-        print @cursor.save
-        print @cursor.move_to(0, @len)
-        @len += 1
-        puts "#{msg}"
-        # print @cursor.move_to(0, @height)
-        print @cursor.restore
+        @tty.puts msg
       }
     end
   end
@@ -60,14 +79,10 @@ class Client
     @request = Thread.new do
       loop {
         msg = $stdin.gets.chomp
-        @server.puts( msg )
-        print @cursor.scroll_up
-        print @cursor.save
-        print @cursor.move_to(0, @len)
-        @len += 1
-        puts "-: #{msg}"
-        print @cursor.restore
-        print @cursor.clear_line
+        @server.puts(msg)
+        @tty.scroll_up
+        @tty.puts "-: #{msg}"
+        @tty.clear_line
         print ">> "
       }
     end
