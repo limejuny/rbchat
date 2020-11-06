@@ -1,8 +1,8 @@
-require 'io/console'
-require 'socket'
-require 'json'
-require 'tty-cursor'
-require 'tty-screen'
+require "io/console"
+require "socket"
+require "json"
+require "tty-cursor"
+require "tty-screen"
 
 class TTYChat
   def initialize
@@ -15,7 +15,7 @@ class TTYChat
     print ">> "
   end
 
-  def puts (message)
+  def puts(message)
     print @cursor.save
     if @len == @height - 2
       @buffer.shift
@@ -45,7 +45,7 @@ class TTYChat
 end
 
 class Client
-  def initialize (server)
+  def initialize(server)
     @server = server
     @request = nil
     @response = nil
